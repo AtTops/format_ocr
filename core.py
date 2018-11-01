@@ -4,7 +4,7 @@ from PIL import Image
 from numpy import cos, sin
 from crnn.crnn import crnnOcr as crnnOcr
 from core_helper.angle import eval_angle
-from core_helper.text_detect import text_detect
+from core_helper.text import text_detect
 
 
 def crnnRec(im, text_recs, if_im=False, left_adjust=False, right_adjust=False, alph=0.2):
@@ -23,6 +23,7 @@ def crnnRec(im, text_recs, if_im=False, left_adjust=False, right_adjust=False, a
     for index, rec in enumerate(text_recs):
         degree, w, h, cx, cy = solve(rec)
         partImg, newW, newH = rotate_cut_img(im, degree, rec, w, h, left_adjust, right_adjust, alph)
+        # 暂时保留，可能之后有用
         newBox = xy_rotate_box(cx, cy, newW, newH, degree)
         partImg_ = partImg.convert('L')
         simPred = crnnOcr(partImg_)  # 识别的文本
@@ -51,8 +52,6 @@ def solve(box):
     cy = (y1 + y3 + y4 + y2) / 4.0
     w = (np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) + np.sqrt((x3 - x4) ** 2 + (y3 - y4) ** 2)) / 2
     h = (np.sqrt((x2 - x3) ** 2 + (y2 - y3) ** 2) + np.sqrt((x1 - x4) ** 2 + (y1 - y4) ** 2)) / 2
-    # x = cx-w/2
-    # y = cy-h/2
     sinA = (h * (x1 - cx) - w * (y1 - cy)) * 1.0 / (h * h + w * w) * 2
     angle = np.arcsin(sinA)
     return angle, w, h, cx, cy

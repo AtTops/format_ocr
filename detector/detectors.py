@@ -69,7 +69,7 @@ class TextDetector:
 
             scores = normalize(scores)
 
-            text_lines = self.text_proposal_connector.get_text_lines(text_proposals, scores, size)  ##合并文本行
-            return text_lines
+            text_boxes = self.text_proposal_connector.get_text_lines(text_proposals, scores, size)  ##合并文本行
+            return text_boxes
         else:
             return []

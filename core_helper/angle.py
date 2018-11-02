@@ -21,17 +21,17 @@ angleNet = cv2.dnn.readNetFromTensorflow(AngleModelPb, AngleModelPbtxt)
 
 def eval_angle(im, detect_angle=False, if_adjust_degree=True):
     """
-    估计图片偏移角度 TODO:两个角度
+    估计图片偏移角度
     :param im:
-    :param detect_angle: 是否检测文字朝向
+    :param detect_angle: 是否检测文字朝向?图片？
     :param if_adjust_degree: 获得调整文字识别结果
     :return:
     """
     angle = 0
-    degree = 0.0  # TODO what is degree?
+    degree = 0.0
     img = np.array(im)
     if detect_angle:
-        angle = angle_detect(img=np.copy(img))  # 文字倾斜角度检测，有待改善（少数改变全局的问题 TODO）
+        angle = angle_detect(img=np.copy(img))  # 图片？文字倾斜角度检测，有待改善（少数改变全局的问题 TODO）
         if angle != 0:
             if angle == 90:
                 im = im.transpose(Image.ROTATE_90)

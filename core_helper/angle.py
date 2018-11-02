@@ -19,18 +19,18 @@ textNet = cv2.dnn.readNetFromDarknet(yoloCfg, yoloWeights)
 angleNet = cv2.dnn.readNetFromTensorflow(AngleModelPb, AngleModelPbtxt)
 
 
-def eval_angle(im, detectAngle=False, ifadjustDegree=True):
+def eval_angle(im, detect_angle=False, if_adjust_degree=True):
     """
     估计图片偏移角度 TODO:两个角度
     :param im:
-    :param detectAngle: 是否检测文字朝向
-    :param ifadjustDegree: 获得调整文字识别结果
+    :param detect_angle: 是否检测文字朝向
+    :param if_adjust_degree: 获得调整文字识别结果
     :return:
     """
     angle = 0
     degree = 0.0  # TODO what is degree?
     img = np.array(im)
-    if detectAngle:
+    if detect_angle:
         angle = angle_detect(img=np.copy(img))  # 文字倾斜角度检测，有待改善（少数改变全局的问题 TODO）
         if angle != 0:
             if angle == 90:
@@ -40,7 +40,7 @@ def eval_angle(im, detectAngle=False, ifadjustDegree=True):
             elif angle == 270:
                 im = im.transpose(Image.ROTATE_270)
 
-    if ifadjustDegree:
+    if if_adjust_degree:
         degree = estimate_skew_angle(np.array(im.convert('L')))  # 一通道的图
     return angle, degree, im.rotate(degree)
 

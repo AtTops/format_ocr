@@ -32,7 +32,7 @@ def text_detect(img,
 
     boxes = np.array(boxes, dtype=np.float32)
     scores = np.array(scores, dtype=np.float32)
-    textdetector = TextDetector(MAX_HORIZONTAL_GAP, MIN_V_OVERLAPS, MIN_SIZE_SIM) # 画框结束
+    textdetector = TextDetector(MAX_HORIZONTAL_GAP, MIN_V_OVERLAPS, MIN_SIZE_SIM)
     shape = img.size[::-1]
     boxes = textdetector.detect(boxes,
                                 scores[:, np.newaxis],
@@ -44,18 +44,9 @@ def text_detect(img,
                                 LINE_MIN_SCORE,
                                 TEXT_PROPOSALS_WIDTH,
                                 MIN_NUM_PROPOSALS)
-
-    text_recs, tmp = draw_boxes(np.array(img), boxes, caption='Box_Image', wait=True, display=False)
-    newBox = []
-    rx = 1
-    ry = 1
-    for box in text_recs:
-        x1, y1 = (box[0], box[1])
-        x2, y2 = (box[2], box[3])
-        x3, y3 = (box[6], box[7])
-        x4, y4 = (box[4], box[5])
-        newBox.append([x1 * rx, y1 * ry, x2 * rx, y2 * ry, x3 * rx, y3 * ry, x4 * rx, y4 * ry])
-    return newBox, tmp
+    # 画框结束
+    text_recs, tmp = draw_boxes(np.array(img), boxes, color=None, caption='Box_Image', wait=True, display=True)
+    return text_recs, tmp
 
 def draw_boxes(im, bboxes, color=(255, 191, 0), display=True, caption="no_name", wait=True):
     """
@@ -63,7 +54,7 @@ def draw_boxes(im, bboxes, color=(255, 191, 0), display=True, caption="no_name",
         cv2 中是bgr
     """
     text_recs = np.zeros((len(bboxes), 8), np.int)
-
+    print("该图检测到 %d 个文本框。" % len(bboxes))
     img = im.copy()
     index = 0
     for box in bboxes:
@@ -81,10 +72,10 @@ def draw_boxes(im, bboxes, color=(255, 191, 0), display=True, caption="no_name",
         y1 = box[5] * box[0] + b1
         x2 = box[2]
         y2 = box[5] * box[2] + b1
-        x3 = box[0]
-        y3 = box[5] * box[0] + b2
-        x4 = box[2]
-        y4 = box[5] * box[2] + b2
+        x3 = box[2]
+        y3 = box[5] * box[2] + b2
+        x4 = box[0]
+        y4 = box[5] * box[0] + b2
 
         disX = x2 - x1
         disY = y2 - y1
@@ -127,12 +118,12 @@ def draw_boxes(im, bboxes, color=(255, 191, 0), display=True, caption="no_name",
     return text_recs, im
 
 
-def draw(im, x1, y1, x2, y2, x3, y3, x4, y4, color=None):
+def draw(im, x1, y1, x2, y2, x4, y4, x3, y3, color=None):
     """
-    画框，ctpn检测出来的框
+    画框，ctpn检测出来的框(x3与x4的坐标不必纠结)
     """
     cv2.line(im, (int(x1), int(y1)), (int(x2), int(y2)), color, 1)
     cv2.line(im, (int(x1), int(y1)), (int(x3), int(y3)), color, 1)
-    cv2.line(im, (int(x4), int(y4)), (int(x2), int(y2)), color, 1)
     cv2.line(im, (int(x3), int(y3)), (int(x4), int(y4)), color, 1)
+    cv2.line(im, (int(x4), int(y4)), (int(x2), int(y2)), color, 1)
     return im

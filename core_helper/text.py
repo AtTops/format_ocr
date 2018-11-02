@@ -56,7 +56,7 @@ def draw_boxes(im, bboxes, color=(255, 191, 0), display=True, caption="no_name",
         cv2 中是bgr
     """
     text_recs = np.zeros((len(bboxes), 8), np.int)
-    print("该图检测到 %d 个文本框。" % len(bboxes))
+    # print("该图检测到 %d 个文本框。" % len(bboxes))
     img = im.copy()
     index = 0
     for box in bboxes:

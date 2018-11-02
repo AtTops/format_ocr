@@ -56,7 +56,7 @@ def model(img, detect_angle=False, config={}, if_im=True, left_adjust=False, rig
     import time
     t = time.time()
     text_recs, tmp = text_detect(**config)
-    print("bbox 总耗时:{}s".format(time.time() - t))
+    print("yolo3找出所有的本文框:{}s".format(time.time() - t))
     sorted_box = sort_box(text_recs)
 
     # 3. 识别文本
@@ -121,22 +121,28 @@ def crnnRec(im, text_recs, if_im=False, left_adjust=False, right_adjust=False, a
     """
     results = []
     img = Image.fromarray(im)
+    count = 0
     for index, rec in enumerate(text_recs):
         t = time.time()
         degree, w, h, cx, cy = solve(rec)
         if left_adjust or right_adjust:
+            count += 1
             partImg, w, h = rotate_cut_img(img, degree, rec, w, h, left_adjust, right_adjust, alph)
             # 暂时保留，可能之后有用
             newBox = xy_rotate_box(cx, cy, w, h, degree)
             partImg_ = partImg.convert('L')
             # partImg.show()
+            t2 = time.time()
+            # print(">>>>>>>调整 本次耗时:{}s".format(t2- t))
             simPred = crnnOcr(partImg_)  # 识别的文本
+            print("这张图的第 %d 个框，识别耗时：%f s" % (count, time.time() - t2))
         else:
+            count += 1
             simPred = crnnOcr(img.convert('L'))
+            print("这张图的第 %d 个框，识别耗时：%f s" % (count, time.time() - t))
         if simPred.strip() != u'':
             results.append(
                 {'cx': cx, 'cy': cy, 'text': simPred, 'w': w, 'h': h, 'degree': degree * 180.0 / np.pi})
-        print("==============ocr 本次耗时:{}s".format(time.time() - t))
     return results
 
 

@@ -21,8 +21,8 @@ MAX_SCALE = 1500
 # yolo3 输入图像尺寸
 IMGSIZE = (1024, 1024)
 # 是否启用LSTM crnn模型
-DETECTANGLE = False  # 是否进行文字/图片方向检测及调整 TODO:目前是设置为关闭也会检测，可能耗时
-LSTMFLAG = False  # OCR模型是否调用LSTM层
+DETECTANGLE = True  # 是否进行文字/图片方向检测及调整
+LSTMFLAG = True  # OCR模型是否调用LSTM层
 GPU = True  # OCR 是否启用GPU
 chinsesModel = True  # 模型选择 True:中英文模型 False:英文模型
 if chinsesModel:

@@ -7,6 +7,7 @@
 import config as cfg
 import numpy as np
 import cv2
+from config import DISPLAY
 from detector.detectors import TextDetector
 from matplotlib import cm
 
@@ -45,8 +46,9 @@ def text_detect(img,
                                 TEXT_PROPOSALS_WIDTH,
                                 MIN_NUM_PROPOSALS)
     # 画框结束
-    text_recs, tmp = draw_boxes(np.array(img), boxes, color=None, caption='Box_Image', wait=True, display=True)
+    text_recs, tmp = draw_boxes(np.array(img), boxes, color=None, caption='Box_Image', wait=True, display=DISPLAY)
     return text_recs, tmp
+
 
 def draw_boxes(im, bboxes, color=(255, 191, 0), display=True, caption="no_name", wait=True):
     """

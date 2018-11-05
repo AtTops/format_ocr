@@ -2,11 +2,11 @@
 import sys
 import torch
 import torch.utils.data
+from crnn.util import strLabelConverter
+import crnn.dataset as dataset
+import crnn.models.crnn as crnn
+import crnn.keys as keys
 from torch.autograd import Variable
-from crnn import util
-from crnn import dataset
-from crnn.models import crnn as crnn
-from crnn import keys
 from collections import OrderedDict
 from config import ocrModel, LSTMFLAG, GPU, chinsesModel
 
@@ -19,7 +19,7 @@ def crnnSource():
     else:
         alphabet = keys.alphabetEnglish
 
-    converter = util.strLabelConverter(alphabet)
+    converter = strLabelConverter(alphabet)
     if torch.cuda.is_available() and GPU:
         model = crnn.CRNN(32, 1, len(alphabet) + 1, 256, 1, lstmFlag=LSTMFLAG).cuda()  ##LSTMFLAG=True crnn 否则 dense ocr
     else:
@@ -36,22 +36,7 @@ def crnnSource():
     model.eval()
 
     return model, converter
-#
-# def crnnSource():
-#     alphabet = keys.alphabet
-#     converter = util.strLabelConverter(alphabet)
-#     if torch.cuda.is_available() and GPU:
-#         model = crnn.CRNN(32, 1, len(alphabet) + 1, 256, 1).cuda()
-#     else:
-#         model = crnn.CRNN(32, 1, len(alphabet) + 1, 256, 1).cpu()
-#     path = './crnn/samples/model_acc97.pth'
-#     #
-#     # path = './crnn/samples/netCRNN.pth'
-#     model.eval()
-#     t = time.time()
-#     model.load_state_dict(torch.load(path))
-#     print("加载训练好的模型， takes time:{}s".format(time.time() - t))
-#     return model, converter
+
 
 # 加载模型
 model, converter = crnnSource()

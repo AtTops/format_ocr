@@ -8,14 +8,9 @@ import config as cfg
 import numpy as np
 from PIL import Image
 from scipy.ndimage import filters, interpolation
-from config import yoloCfg, yoloWeights
-from config import AngleModelPb, AngleModelPbtxt
 from opencv_dnn_detect import angle_detect  # 文字方向检测
 import cv2
 
-textNet = cv2.dnn.readNetFromDarknet(yoloCfg, yoloWeights)
-# 文字方向检测模型
-angleNet = cv2.dnn.readNetFromTensorflow(AngleModelPb, AngleModelPbtxt)
 
 def global_tune_angle(im):
     """
@@ -38,6 +33,7 @@ def global_tune_angle(im):
             im = im.transpose(Image.ROTATE_270)
     return angle, im
 
+
 def fine_tune_angle(im):
     """
         微调倾斜的图片
@@ -49,6 +45,7 @@ def fine_tune_angle(im):
     degree = estimate_skew_angle(np.array(im.convert('L')))  # 一通道的图
     print("------ degree : %f" % degree)
     return degree, im
+
 
 def estimate_skew_angle(raw):
     """

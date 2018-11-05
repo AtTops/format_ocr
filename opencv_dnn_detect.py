@@ -28,17 +28,16 @@ def text_detect(img):
     return boxes, scores
 
 
-def angle_detect(img, adjust=True):
+def angle_detect(img):
     """
     文字方向检测
     """
     h, w = img.shape[:2]
     ROTATE = [0, 90, 180, 270]
-    if adjust:
-        thesh = 0.05
-        xmin, ymin, xmax, ymax = int(thesh * w), int(thesh * h), w - int(thesh * w), h - int(thesh * h)
-        # 剪切图片边缘 TODO:如果周围有文字呢？
-        img = img[ymin:ymax, xmin:xmax]
+    thesh = 0.05
+    xmin, ymin, xmax, ymax = int(thesh * w), int(thesh * h), w - int(thesh * w), h - int(thesh * h)
+    # 剪切图片边缘 TODO:如果周围有文字呢？
+    img = img[ymin:ymax, xmin:xmax]
     # swapRB，是选择是否交换R与B颜色通道，一般用opencv读取caffe的模型就需要将这个参数设置为false，读取tensorflow的模型，
     # 则默认选择True即可，这样才不会出现在opencv框架和tensorflow框架下，object detection检测效果不同。
     inputBlob = cv2.dnn.blobFromImage(img, scalefactor=1.0,

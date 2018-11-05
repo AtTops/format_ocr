@@ -2,8 +2,8 @@ import config as cfg
 import numpy as np
 from PIL import Image
 from numpy import cos, sin
-from crnn.crnn import crnnOcr as crnnOcr
-from core_helper.angle import eval_angle
+from crnn.crnn_ import crnnOcr as crnnOcr
+from core_helper.angle import global_tune_angle, fine_tune_angle
 from core_helper.text import text_detect
 
 
@@ -33,30 +33,38 @@ def rotate(x, y, angle, cx, cy):
     return x_new, y_new
 
 
-def model(img, detect_angle=False, config={}, if_im=True, left_adjust=False, right_adjust=False, alph=0.2,
-          if_adjust_degree=False):
+def model(img, global_tune=False, fine_tune=False, config={}, if_im=True,
+          left_adjust=False, right_adjust=False, alph=0.2):
     """
-
-    :param img 调整文字识别结果
-    :param detect_angle 是否检测文字朝向
+    调整文字识别结果
+    :param img An :py:class:`~PIL.Image.Image` object.
+    :param global_tune 是否检测并纠正总体朝向  0.5s左右
     :param config 配置参数
     :param if_im:
     :param left_adjust:
     :param right_adjust:
     :param alph:
-    :param if_adjust_degree:
+    :param fine_tune:
     :return:
     """
     # 1. 角度检测、修正等
-    angle, degree, img = eval_angle(img, detect_angle=detect_angle, if_adjust_degree=if_adjust_degree)
+    angle = 0
+    degree = 0.0
+    t0 = time.time()
+    if global_tune:
+        angle, img = global_tune_angle(img)
+    if fine_tune:
+        degree, img = fine_tune_angle(img)
+    img = img.rotate(degree)
+    # angle, degree, img = eval_angle(img, global_tune=global_tune, fine_tune=fine_tune)
     img = letterbox_image(img, cfg.IMGSIZE)
+    print("角度检测、修正等:{}s".format(time.time() - t0))
 
     # 2. 画文本框
-    config['img'] = img
-    import time
-    t = time.time()
+    config['img'] = letterbox_image(img, cfg.IMGSIZE)  # 缩放，参考yolo3
+    t2 = time.time()
     text_recs, tmp = text_detect(**config)
-    print("yolo3找出所有的本文框:{}s".format(time.time() - t))
+    print("yolo3找出所有的本文框:{}s".format(time.time() - t2))
     sorted_box = sort_box(text_recs)
 
     # 3. 识别文本
@@ -65,7 +73,8 @@ def model(img, detect_angle=False, config={}, if_im=True, left_adjust=False, rig
 
 
 def letterbox_image(image, size):
-    """ 缩放，参考yolo3
+    """
+        缩放，参考yolo3
         resize image with unchanged aspect ratio using padding
         Reference: https://github.com/qqwweee/keras-yolo3/blob/master/yolo3/utils.py
     :param image:
@@ -106,7 +115,9 @@ def sort_box(box):
     box = sorted(box, key=lambda x: sum([x[1], x[3], x[5], x[7]]))
     return list(box)
 
+
 import time
+
 
 def crnnRec(im, text_recs, if_im=False, left_adjust=False, right_adjust=False, alph=0.2):
     """
@@ -122,27 +133,22 @@ def crnnRec(im, text_recs, if_im=False, left_adjust=False, right_adjust=False, a
     results = []
     img = Image.fromarray(im)
     count = 0
+    t0 = time.time()
     for index, rec in enumerate(text_recs):
         t = time.time()
         degree, w, h, cx, cy = solve(rec)
-        if left_adjust or right_adjust:
-            count += 1
-            partImg, w, h = rotate_cut_img(img, degree, rec, w, h, left_adjust, right_adjust, alph)
-            # 暂时保留，可能之后有用
-            newBox = xy_rotate_box(cx, cy, w, h, degree)
-            partImg_ = partImg.convert('L')
-            # partImg.show()
-            t2 = time.time()
-            # print(">>>>>>>调整 本次耗时:{}s".format(t2- t))
-            simPred = crnnOcr(partImg_)  # 识别的文本
-            print("这张图的第 %d 个框，识别耗时：%f s" % (count, time.time() - t2))
-        else:
-            count += 1
-            simPred = crnnOcr(img.convert('L'))
-            print("这张图的第 %d 个框，识别耗时：%f s" % (count, time.time() - t))
+        count += 1
+        partImg, w, h = rotate_cut_img(img, degree, rec, w, h, left_adjust, right_adjust, alph)
+        # 暂时保留，可能之后有用
+        newBox = xy_rotate_box(cx, cy, w, h, degree)
+        partImg_ = partImg.convert('L')
+        # partImg.show()
+        simPred = crnnOcr(partImg_)  # 识别的文本
+        print("这张图的第 %d 个框，识别耗时：%f s" % (count, time.time() - t))
         if simPred.strip() != u'':
             results.append(
                 {'cx': cx, 'cy': cy, 'text': simPred, 'w': w, 'h': h, 'degree': degree * 180.0 / np.pi})
+    print("这张图识别总耗时：{} s".format(time.time() - t0))
     return results
 
 

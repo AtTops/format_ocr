@@ -10,7 +10,6 @@ from PIL import Image
 from scipy.ndimage import filters, interpolation
 from config import yoloCfg, yoloWeights
 from config import AngleModelPb, AngleModelPbtxt
-from config import IMGSIZE
 from opencv_dnn_detect import angle_detect  # 文字方向检测
 import cv2
 
@@ -18,36 +17,42 @@ textNet = cv2.dnn.readNetFromDarknet(yoloCfg, yoloWeights)
 # 文字方向检测模型
 angleNet = cv2.dnn.readNetFromTensorflow(AngleModelPb, AngleModelPbtxt)
 
-
-def eval_angle(im, detect_angle=False, if_adjust_degree=True):
+def global_tune_angle(im):
     """
-    估计图片偏移角度
-    :param im:
-    :param detect_angle: 是否检测文字朝向?图片？
-    :param if_adjust_degree: 获得调整文字识别结果
-    :return:
+    大方向估计并调整图片偏移角度
+    :param im An :py:class:`~PIL.Image.Image` object.
+    :return: angle: int
+              im  : Image
+            检测到的需要逆时针旋转的度数，以及旋转过后的图
     """
-    angle = 0
-    degree = 0.0
     img = np.array(im)
-    if detect_angle:
-        angle = angle_detect(img=np.copy(img))  # 图片？文字倾斜角度检测，有待改善（少数改变全局的问题 TODO）
-        if angle != 0:
-            if angle == 90:
-                im = im.transpose(Image.ROTATE_90)
-            elif angle == 180:
-                im = im.transpose(Image.ROTATE_180)
-            elif angle == 270:
-                im = im.transpose(Image.ROTATE_270)
+    angle = angle_detect(np.copy(img))  # 图片的整体大方向调整，逆时针旋转 镜像
+    print("------ angle: %d" % angle)
+    if angle != 0:
+        # 逆时针旋转
+        if angle == 90:
+            im = im.transpose(Image.ROTATE_90)
+        elif angle == 180:
+            im = im.transpose(Image.ROTATE_180)
+        elif angle == 270:
+            im = im.transpose(Image.ROTATE_270)
+    return angle, im
 
-    if if_adjust_degree:
-        degree = estimate_skew_angle(np.array(im.convert('L')))  # 一通道的图
-    return angle, degree, im.rotate(degree)
-
+def fine_tune_angle(im):
+    """
+        微调倾斜的图片
+        :param im An :py:class:`~PIL.Image.Image` object.
+        :return: degree: float
+                  im  : Image
+                检测到的需要逆时针旋转的度数，以及旋转过后的图
+        """
+    degree = estimate_skew_angle(np.array(im.convert('L')))  # 一通道的图
+    print("------ degree : %f" % degree)
+    return degree, im
 
 def estimate_skew_angle(raw):
     """
-    估计图像文字角度
+    检测倾斜角度
     """
     raw = resize_im(raw)
     image = raw - np.amin(raw)  # 归一化
@@ -64,7 +69,7 @@ def estimate_skew_angle(raw):
     flat = np.amax(flat) - flat
     flat -= np.amin(flat)
     est = flat[o0:d0 - o0, o1:d1 - o1]
-    angles = range(-15, 15) # TODO:+-15,应该是足够了
+    angles = range(-15, 15)  # TODO:+-15,应该是足够了
     estimates = []
     for a in angles:
         # https://docs.scipy.org/doc/scipy-0.7.x/reference/generated/scipy.ndimage.interpolation.rotate.html

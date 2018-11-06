@@ -18,18 +18,13 @@ else:
 
 
 def text_detect(img,
-                MAX_HORIZONTAL_GAP=30,
+                MAX_HORIZONTAL_GAP=70,
                 MIN_V_OVERLAPS=0.6,
                 MIN_SIZE_SIM=0.6,
-                TEXT_PROPOSALS_MIN_SCORE=0.7,
-                TEXT_PROPOSALS_NMS_THRESH=0.3,
-                TEXT_LINE_NMS_THRESH=0.3,
-                MIN_RATIO=1.0,
-                LINE_MIN_SCORE=0.8,
-                TEXT_PROPOSALS_WIDTH=5,
-                MIN_NUM_PROPOSALS=1, ):
+                TEXT_PROPOSALS_MIN_SCORE=0.15,
+                TEXT_PROPOSALS_NMS_THRESH=0.3):
     # 画文本框
-    boxes, scores = detect.text_detect(np.array(img))
+    boxes, scores = detect.text_detect(np.array(img))  # 耗时的地方
 
     boxes = np.array(boxes, dtype=np.float32)
     scores = np.array(scores, dtype=np.float32)
@@ -40,11 +35,7 @@ def text_detect(img,
                                 shape,
                                 TEXT_PROPOSALS_MIN_SCORE,
                                 TEXT_PROPOSALS_NMS_THRESH,
-                                TEXT_LINE_NMS_THRESH,
-                                MIN_RATIO,
-                                LINE_MIN_SCORE,
-                                TEXT_PROPOSALS_WIDTH,
-                                MIN_NUM_PROPOSALS)
+                                )
     # 画框结束
     text_recs, tmp = draw_boxes(np.array(img), boxes, color=None, caption='Box_Image', wait=True, display=DISPLAY)
     return text_recs, tmp
@@ -112,6 +103,7 @@ def draw_boxes(im, bboxes, color=(255, 191, 0), display=True, caption="no_name",
 
     if display:
         cv2.imshow(caption, img)
+        # cv2.imwrite("./test_box.jpg", img)
         if wait:
             cv2.waitKey(0)
         else:

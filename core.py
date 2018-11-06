@@ -33,7 +33,7 @@ def rotate(x, y, angle, cx, cy):
     return x_new, y_new
 
 
-def model(img, global_tune=False, fine_tune=False, config={}, if_im=True,
+def model(img, global_tune=False, fine_tune=False, config={}, if_im=False,
           left_adjust=False, right_adjust=False, alph=0.2):
     """
     调整文字识别结果
@@ -56,15 +56,13 @@ def model(img, global_tune=False, fine_tune=False, config={}, if_im=True,
     if fine_tune:
         degree, img = fine_tune_angle(img)
     img = img.rotate(degree)
-    # angle, degree, img = eval_angle(img, global_tune=global_tune, fine_tune=fine_tune)
     img = letterbox_image(img, cfg.IMGSIZE)
-    print("角度检测、修正等:{}s".format(time.time() - t0))
+    print("角度检测调整耗时:{}s".format(time.time() - t0))
+
+    config['img'] = letterbox_image(img, cfg.IMGSIZE)  # 缩放，参考yolo3
 
     # 2. 画文本框
-    config['img'] = letterbox_image(img, cfg.IMGSIZE)  # 缩放，参考yolo3
-    t2 = time.time()
     text_recs, tmp = text_detect(**config)
-    print("yolo3找出所有的本文框:{}s".format(time.time() - t2))
     sorted_box = sort_box(text_recs)
 
     # 3. 识别文本
@@ -77,8 +75,8 @@ def letterbox_image(image, size):
         缩放，参考yolo3
         resize image with unchanged aspect ratio using padding
         Reference: https://github.com/qqwweee/keras-yolo3/blob/master/yolo3/utils.py
-    :param image:
-    :param size:
+    :param image: Image
+    :param size: config (1024,1024)
     :return:
     """
 
@@ -94,9 +92,9 @@ def letterbox_image(image, size):
         new_h = int(image_h * min(w * 1.0 / image_w, h * 1.0 / image_h))
         resized_image = image.resize((new_w, new_h), Image.BICUBIC)
 
-    boxed_image = Image.new('RGB', size, (128, 128, 128))
-    boxed_image.paste(resized_image, ((w - new_w) // 2, (h - new_h) // 2))
-    return boxed_image
+    padded_image = Image.new('RGB', size, (128, 128, 128))
+    padded_image.paste(resized_image, ((w - new_w) // 2, (h - new_h) // 2))
+    return padded_image
 
 
 def sort_box(box):
@@ -142,7 +140,8 @@ def crnnRec(im, text_recs, if_im=False, left_adjust=False, right_adjust=False, a
         # 暂时保留，可能之后有用
         newBox = xy_rotate_box(cx, cy, w, h, degree)
         partImg_ = partImg.convert('L')
-        # partImg.show()
+        if if_im:
+            partImg.show()
         simPred = crnnOcr(partImg_)  # 识别的文本
         print("这张图的第 %d 个框，识别耗时：%f s" % (count, time.time() - t))
         if simPred.strip() != u'':

@@ -11,6 +11,8 @@ yoloData = os.path.join(pwd, "models", "text.data")
 
 # 是否show出框好的图
 DISPLAY = True
+# 是否show出框
+if_im = False
 
 # 文字方向检测
 AngleModelPb = os.path.join(pwd, "models", "Angle-model.pb")
@@ -21,7 +23,7 @@ MAX_SCALE = 1500
 # yolo3 输入图像尺寸
 IMGSIZE = (1024, 1024)
 # 是否启用LSTM crnn模型
-DETECTANGLE = True  # 是否进行文字/图片方向检测及调整
+DETECTANGLE = True  # 是否"大的"图片方向检测及调整,0.5s左右，水平图像可以False   逆时针旋转 镜像
 LSTMFLAG = True  # OCR模型是否调用LSTM层
 GPU = True  # OCR 是否启用GPU
 chinsesModel = True  # 模型选择 True:中英文模型 False:英文模型

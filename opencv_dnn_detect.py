@@ -33,7 +33,6 @@ def text_detect(img):
     indx = np.where(scores > thresh)[0]
     scores = scores[indx]
     boxes = np.array(list(zip(xmin[indx], ymin[indx], xmax[indx], ymax[indx])))
-    t4 = time.time()
     return boxes, scores
 
 

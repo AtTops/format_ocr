@@ -10,20 +10,20 @@ import core
 from glob import glob
 from PIL import Image
 import time
-from config import DETECTANGLE,if_im
+from config import global_tune, if_im
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
 
-paths = glob('./test_img/standard.jpg')
-# paths = ['./test_img/mp.jpg', './test_img/mp1.jpg', './test_img/mp2.jpg', './test_img/mp3.jpg']
+# paths = glob('./test_img/standard.jpg')
+paths = ['./test_img/mp.jpg', './test_img/mp1.jpg', './test_img/mp2.jpg', './test_img/mp3.jpg']
 
 if __name__ == '__main__':
     print("OCR Starting!")
     img = Image.open(paths[0]).convert("RGB")
     t = time.time()
     _, result, angle = core.model(img,
-                                  global_tune=False,  # 图片的整体大方向调整，逆时针旋转 镜像. 大约0.5s
-                                  fine_tune=False,  # 微调倾斜角（如果能保证图像水平，或者global_tune之后为水平，则不需要微调）. 大约2s
+                                  global_tune=True,  # 图片的整体大方向调整，逆时针旋转 镜像. 大约0.5s
+                                  fine_tune=True,  # 微调倾斜角（如果能保证图像水平，或者global_tune之后为水平，则不需要微调）. 大约2s
                                   config=dict(MAX_HORIZONTAL_GAP=90,  # 字符之间的最大间隔，用于文本行的合并 TODO:最好是自动计算
                                               MIN_V_OVERLAPS=0.6,  # 小 ==》斜 TODO
                                               MIN_SIZE_SIM=0.6,
@@ -40,11 +40,11 @@ if __name__ == '__main__':
         print(result[index]["text"])
     print("=======================================\n")
 
-    img2 = Image.open(paths[0]).convert("RGB")
+    img2 = Image.open(paths[1]).convert("RGB")
     t2 = time.time()
     _, result, angle = core.model(img2,
-                                  global_tune=False,  # 图片的整体大方向调整，逆时针旋转. 镜像
-                                  fine_tune=False,  # 微调倾斜角（如果能保证图像水平，或者global_tune之后为水平，则不需要微调）
+                                  global_tune=True,  # 图片的整体大方向调整，逆时针旋转. 镜像
+                                  fine_tune=True,  # 微调倾斜角（如果能保证图像水平，或者global_tune之后为水平，则不需要微调）
                                   config=dict(MAX_HORIZONTAL_GAP=90,  # 字符之间的最大横向间隙，用于文本行的合并
                                               MIN_V_OVERLAPS=0.6,
                                               MIN_SIZE_SIM=0.6,

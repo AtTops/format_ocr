@@ -20,11 +20,11 @@ AngleModelPbtxt = os.path.join(pwd, "models", "Angle-model.pbtxt")
 # 图缩放
 SCALE = 900
 MAX_SCALE = 1500
-# yolo3 输入图像尺寸
+# yolo3 输入图像尺寸(训练决定的)
 IMGSIZE = (1024, 1024)
 # 是否启用LSTM crnn模型
 global_tune = False  # 是否"大的"图片方向检测及调整,0.5s左右，水平图像可以False   逆时针旋转 镜像
-fine_tune = False
+fine_tune = False # 是否微调角度
 LSTMFLAG = True  # OCR模型是否调用LSTM层
 GPU = True  # OCR 是否启用GPU
 chinsesModel = True  # 模型选择 True:中英文模型 False:英文模型

@@ -1,9 +1,9 @@
 import sys, os
 
 pwd = os.getcwd()
-from config import yoloCfg, yoloWeights, yoloData, darknetRoot
+from config import YOLO_CFG, yoloWeights, yoloData, DARKNET_ROOT
 
-os.chdir(darknetRoot)
+os.chdir(DARKNET_ROOT)
 sys.path.append('python')
 import darknet as dn
 
@@ -57,7 +57,7 @@ def to_box(r):
 import pdb
 
 # dn.set_gpu(0)
-net = dn.load_net(yoloCfg.encode('utf-8'), yoloWeights.encode('utf-8'), 0)
+net = dn.load_net(YOLO_CFG.encode('utf-8'), yoloWeights.encode('utf-8'), 0)
 meta = dn.load_meta(yoloData.encode('utf-8'))
 os.chdir(pwd)
 

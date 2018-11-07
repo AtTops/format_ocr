@@ -44,17 +44,12 @@ model, converter = crnnSource()
 
 def crnnOcr(image):
     """
-    crnn模型，ocr识别
-    @@model,
-    @@converter,
-    @@im
-    @@text_recs:text box
-
+    crnn模型，自然场景端到端识别
+    :param image: 'L' image
+    :return: box识别后的text
     """
     scale = image.size[1] * 1.0 / 32
-    w = image.size[0] / scale
-    w = int(w)
-    # print "im size:{},{}".format(image.size,w)
+    w = int(image.size[0] / scale)
     transformer = dataset.resizeNormalize((w, 32))
     if torch.cuda.is_available() and GPU:
         image = transformer(image).cuda()

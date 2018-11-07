@@ -1,16 +1,16 @@
 import os
 
 # True 启用opencv dnn 反之 darkent
-opencvFlag = True
+OPENCV_FLAG = True
 # yolo 安装目录
-darknetRoot = os.path.join(os.path.curdir, "darknet")
+DARKNET_ROOT = os.path.join(os.path.curdir, "darknet")
 pwd = os.getcwd()
-yoloCfg = os.path.join(pwd, "models", "text.cfg")
+YOLO_CFG = os.path.join(pwd, "models", "text.cfg")
 yoloWeights = os.path.join(pwd, "models", "text.weights")
 yoloData = os.path.join(pwd, "models", "text.data")
 
 # 是否show出框好的图
-DISPLAY = False
+DISPLAY = True
 # 是否show出框
 if_im = False
 

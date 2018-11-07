@@ -1,17 +1,16 @@
-from config import yoloCfg, yoloWeights
+from config import YOLO_CFG, yoloWeights
 from config import AngleModelPb, AngleModelPbtxt
 from config import IMGSIZE  # 输出图像的size
 import numpy as np
 import cv2
 import time
 
-textNet = cv2.dnn.readNetFromDarknet(yoloCfg, yoloWeights)
+textNet = cv2.dnn.readNetFromDarknet(YOLO_CFG, yoloWeights)
 # 文字方向检测模型
 angleNet = cv2.dnn.readNetFromTensorflow(AngleModelPb, AngleModelPbtxt)
 
 
-def text_detect(img):
-    thresh = 0.1
+def text_detect(img, thresh=0.3):
     h, w = img.shape[:2]
     # 二值图像几何形状提取，Blob几何调整
     inputBlob = cv2.dnn.blobFromImage(img, scalefactor=0.00390625, size=IMGSIZE, swapRB=True, crop=False)
@@ -25,11 +24,13 @@ def text_detect(img):
     print("yolo3找出所有的本文框:{}s".format(time.time() - t))
     cx = pred[:, 0] * w
     cy = pred[:, 1] * h
+    # 所有候选框的坐标
     xmin = cx - pred[:, 2] * w / 2
     xmax = cx + pred[:, 2] * w / 2
     ymin = cy - pred[:, 3] * h / 2
     ymax = cy + pred[:, 3] * h / 2
     scores = pred[:, 4]
+    # 高于阈值的候选框
     indx = np.where(scores > thresh)[0]
     scores = scores[indx]
     boxes = np.array(list(zip(xmin[indx], ymin[indx], xmax[indx], ymax[indx])))

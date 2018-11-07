@@ -34,7 +34,7 @@ class TextDetector:
         self.text_proposal_connector = TextProposalConnector(MAX_HORIZONTAL_GAP, MIN_V_OVERLAPS, MIN_SIZE_SIM)
 
     def detect(self, text_proposals, scores, size,
-               TEXT_PROPOSALS_MIN_SCORE=0.7,
+               TEXT_PROPOSALS_MIN_SCORE=0.3,
                TEXT_PROPOSALS_NMS_THRESH=0.3,
                TEXT_LINE_NMS_THRESH=0.3,
                MIN_RATIO=1.0,
@@ -47,20 +47,16 @@ class TextDetector:
         :param scores:
         :param size:
         :param TEXT_PROPOSALS_MIN_SCORE 过滤字符box阀值
-        :param TEXT_PROPOSALS_NMS_THRESH: nms过滤重复字符box
+        :param TEXT_PROPOSALS_NMS_THRESH: nms过滤重叠box
         :param TEXT_LINE_NMS_THRESH: nms过滤行文本重复过滤阀值
         :param MIN_RATIO: widths/heights宽度与高度比例
         :param LINE_MIN_SCORE: 行文本置信度
-        :param TEXT_PROPOSALS_WIDTH: 每个字符的默认最小宽度
-        :param MIN_NUM_PROPOSALS: 最小字符数
-        :return: the bounding boxes of the detected texts
+        :param TEXT_PROPOSALS_WIDTH: 每个文本框的默认最小宽度
+        :param MIN_NUM_PROPOSALS: 最小bbox数
+        :return: the bounding boxes of the detected texts after some filter
         """
-        # text_proposals, scores=self.text_proposal_detector.detect(im, cfg.MEAN)
-        keep_inds = np.where(scores > TEXT_PROPOSALS_MIN_SCORE)[0]
-        text_proposals, scores = text_proposals[keep_inds], scores[keep_inds]
-
-        sorted_indices = np.argsort(scores.ravel())[::-1]
-        text_proposals, scores = text_proposals[sorted_indices], scores[sorted_indices]
+        sorted_index = np.argsort(scores.ravel())[::-1]
+        text_proposals, scores = text_proposals[sorted_index], scores[sorted_index]
 
         # nms for text proposals
         if len(text_proposals) > 0:

@@ -11,7 +11,7 @@ from config import DISPLAY
 from detector.detectors import TextDetector
 from matplotlib import cm
 
-if cfg.opencvFlag:
+if cfg.OPENCV_FLAG:
     import opencv_dnn_detect as detect
 else:
     import darknet_detect as detect
@@ -23,17 +23,17 @@ def text_detect(img,
                 MIN_SIZE_SIM=0.6,
                 TEXT_PROPOSALS_MIN_SCORE=0.15,
                 TEXT_PROPOSALS_NMS_THRESH=0.3):
-    # 画文本框
-    boxes, scores = detect.text_detect(np.array(img))  # 耗时的地方
+    # 文本框
+    boxes, scores = detect.text_detect(np.array(img), thresh=TEXT_PROPOSALS_MIN_SCORE)  # 耗时的地方
 
     boxes = np.array(boxes, dtype=np.float32)
     scores = np.array(scores, dtype=np.float32)
     textdetector = TextDetector(MAX_HORIZONTAL_GAP, MIN_V_OVERLAPS, MIN_SIZE_SIM)
     shape = img.size[::-1]
+    # 对textNet检测出来的框进行进一步的过滤，score,nms TODO:score一次过滤即可
     boxes = textdetector.detect(boxes,
-                                scores[:, np.newaxis],
+                                scores[:, np.newaxis],  # 变为列
                                 shape,
-                                TEXT_PROPOSALS_MIN_SCORE,
                                 TEXT_PROPOSALS_NMS_THRESH,
                                 )
     # 画框结束

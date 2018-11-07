@@ -1,5 +1,5 @@
-import config as cfg
 import numpy as np
+from config import cfg
 from PIL import Image
 from numpy import cos, sin
 from crnn.crnn_ import crnnOcr as crnnOcr
@@ -33,8 +33,8 @@ def rotate(x, y, angle, cx, cy):
     return x_new, y_new
 
 
-def model(img, global_tune=False, fine_tune=False, config={}, if_im=False,
-          left_adjust=False, right_adjust=False, alph=0.2):
+def model(img, global_tune=cfg.global_tune, fine_tune=cfg.fine_tune, config={}, if_im=cfg.if_im,
+          left_adjust=cfg.left_adjust, right_adjust=cfg.right_adjust, alpha=cfg.alpha):
     """
     调整文字识别结果
     :param img An :py:class:`~PIL.Image.Image` object.
@@ -43,7 +43,7 @@ def model(img, global_tune=False, fine_tune=False, config={}, if_im=False,
     :param if_im:
     :param left_adjust:
     :param right_adjust:
-    :param alph:
+    :param alpha:
     :param fine_tune:
     :return:
     """
@@ -56,21 +56,21 @@ def model(img, global_tune=False, fine_tune=False, config={}, if_im=False,
     if fine_tune:
         degree, img = fine_tune_angle(img)
     img = img.rotate(degree)
-    img = letterbox_image(img, cfg.IMGSIZE)
+    img = letterbox_image(img, cfg.img_size)
     print("角度检测调整耗时:{}s".format(time.time() - t0))
 
-    config['img'] = letterbox_image(img, cfg.IMGSIZE)  # 缩放，参考yolo3
+    config['img'] = letterbox_image(img)  # 缩放，参考yolo3
 
     # 2. 画文本框
     text_recs, tmp = text_detect(**config)
     sorted_box = sort_box(text_recs)
 
     # 3. 识别文本
-    result = crnnRec(np.array(img), sorted_box, if_im, left_adjust, right_adjust, alph)
+    result = crnnRec(np.array(img), sorted_box, if_im, left_adjust, right_adjust, alpha)
     return img, result, angle
 
 
-def letterbox_image(image, size):
+def letterbox_image(image, size=cfg.img_size):
     """
         缩放，参考yolo3
         resize image with unchanged aspect ratio using padding
@@ -117,7 +117,7 @@ def sort_box(box):
 import time
 
 
-def crnnRec(im, text_recs, if_im=False, left_adjust=False, right_adjust=False, alph=0.2):
+def crnnRec(im, text_recs, if_im, left_adjust, right_adjust, alpha):
     """
     crnn模型，ocr识别
     :param im
@@ -125,7 +125,7 @@ def crnnRec(im, text_recs, if_im=False, left_adjust=False, right_adjust=False, a
     :param if_im 是否输出box对应的img
     :param left_adjust:
     :param right_adjust:
-    :param alph:
+    :param alpha:
     :return
     """
     results = []
@@ -136,11 +136,13 @@ def crnnRec(im, text_recs, if_im=False, left_adjust=False, right_adjust=False, a
         t = time.time()
         degree, w, h, cx, cy = solve(rec)
         count += 1
-        partImg, w, h = rotate_cut_img(img, degree, rec, w, h, left_adjust, right_adjust, alph)
+        partImg, w, h = rotate_cut_img(img, degree, rec, w, h, left_adjust, right_adjust, alpha)
         # 暂时保留，可能之后有用
         newBox = xy_rotate_box(cx, cy, w, h, degree)
         partImg_ = partImg.convert('L')
         if if_im:
+            print(if_im)
+            print("+++++++++")
             partImg.show()
         simPred = crnnOcr(partImg_)  # 识别的文本
         print("这张图的第 %d 个框，识别耗时：%f s" % (count, time.time() - t))
@@ -173,7 +175,7 @@ def solve(box):
     return angle, w, h, cx, cy
 
 
-def rotate_cut_img(im, degree, box, w, h, left_adjust=False, right_adjust=False, alph=0.2):
+def rotate_cut_img(im, degree, box, w, h, left_adjust=cfg.left_adjust, right_adjust=cfg.right_adjust, alpha=cfg.alpha):
     # x_center, y_center = np.mean(box[:4]), np.mean(box[4:8]) # bbox的中心坐标
     x1, y1, x2, y2, x3, y3, x4, y4 = box[:8]
     x_center, y_center = np.mean([x1, x2, x3, x4]), np.mean([y1, y2, y3, y4])
@@ -185,10 +187,10 @@ def rotate_cut_img(im, degree, box, w, h, left_adjust=False, right_adjust=False,
     if left_adjust:
         left = 1
 
-    box = (max(1, x_center - w / 2 - left * alph * (w / 2))  # xmin
-           , y_center - h / 2,  # ymin
-           min(x_center + w / 2 + right * alph * (w / 2), im.size[0] - 1)  # xmax
-           , y_center + h / 2)  # ymax
+    box = (max(1, x_center - w / 2 - left * alpha * (w / 2)),  # xmin
+           y_center - h / 2,  # ymin
+           min(x_center + w / 2 + right * alpha * (w / 2), im.size[0] - 1),  # xmax
+           y_center + h / 2)  # ymax
 
     newW = box[2] - box[0]
     newH = box[3] - box[1]

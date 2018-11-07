@@ -1,19 +1,17 @@
-from config import YOLO_CFG, yoloWeights
-from config import AngleModelPb, AngleModelPbtxt
-from config import IMGSIZE  # 输出图像的size
 import numpy as np
 import cv2
 import time
+from config import cfg
 
-textNet = cv2.dnn.readNetFromDarknet(YOLO_CFG, yoloWeights)
+textNet = cv2.dnn.readNetFromDarknet(cfg.yolo_cfg, cfg.yolo_weights)
 # 文字方向检测模型
-angleNet = cv2.dnn.readNetFromTensorflow(AngleModelPb, AngleModelPbtxt)
+angleNet = cv2.dnn.readNetFromTensorflow(cfg.angle_model_pb, cfg.angle_model_pbtxt)
 
 
 def text_detect(img, thresh=0.3):
     h, w = img.shape[:2]
     # 二值图像几何形状提取，Blob几何调整
-    inputBlob = cv2.dnn.blobFromImage(img, scalefactor=0.00390625, size=IMGSIZE, swapRB=True, crop=False)
+    inputBlob = cv2.dnn.blobFromImage(img, scalefactor=0.00390625, size=cfg.img_size, swapRB=True, crop=False)
     textNet.setInput(inputBlob)
     t = time.time()
     # look = np.squeeze(inputBlob)

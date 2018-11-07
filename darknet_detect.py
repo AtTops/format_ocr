@@ -1,11 +1,13 @@
-import sys, os
+import os
+import sys
+
+import darknet as dn
+from config import cfg
 
 pwd = os.getcwd()
-from config import YOLO_CFG, yoloWeights, yoloData, DARKNET_ROOT
 
-os.chdir(DARKNET_ROOT)
+os.chdir(cfg.darknet_root)
 sys.path.append('python')
-import darknet as dn
 
 
 def array_to_image(arr):
@@ -54,11 +56,9 @@ def to_box(r):
     return boxes, scores
 
 
-import pdb
-
 # dn.set_gpu(0)
-net = dn.load_net(YOLO_CFG.encode('utf-8'), yoloWeights.encode('utf-8'), 0)
-meta = dn.load_meta(yoloData.encode('utf-8'))
+net = dn.load_net(cfg.yolo_cfg.encode('utf-8'), cfg.yolo_weights.encode('utf-8'), 0)
+meta = dn.load_meta(cfg.yolo_data.encode('utf-8'))
 os.chdir(pwd)
 
 

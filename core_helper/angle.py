@@ -4,7 +4,7 @@
 # @Email   : 
 # @File    : angle.py
 # @Software: PyCharm Community Edition
-import config as cfg
+from config import cfg
 import numpy as np
 from PIL import Image
 from scipy.ndimage import filters, interpolation
@@ -78,7 +78,7 @@ def estimate_skew_angle(raw):
     return a
 
 
-def resize_im(im, scale=cfg.SCALE, max_scale=cfg.MAX_SCALE):
+def resize_im(im, scale=cfg.scale, max_scale=cfg.max_scale):
     f = float(scale) / min(im.shape[0], im.shape[1])
     if max_scale is not None and f * max(im.shape[0], im.shape[1]) > max_scale:
         f = float(max_scale) / max(im.shape[0], im.shape[1])

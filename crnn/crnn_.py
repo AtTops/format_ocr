@@ -8,24 +8,24 @@ import crnn.models.crnn as crnn
 import crnn.keys as keys
 from torch.autograd import Variable
 from collections import OrderedDict
-from config import ocrModel, LSTMFLAG, GPU, chinsesModel
+from config import cfg
 
 sys.path.insert(1, "./crnn")
 
 
 def crnnSource():
-    if chinsesModel:
+    if cfg.chinese_model:
         alphabet = keys.alphabetChinese
     else:
         alphabet = keys.alphabetEnglish
 
     converter = strLabelConverter(alphabet)
-    if torch.cuda.is_available() and GPU:
-        model = crnn.CRNN(32, 1, len(alphabet) + 1, 256, 1, lstmFlag=LSTMFLAG).cuda()  ##LSTMFLAG=True crnn 否则 dense ocr
+    if torch.cuda.is_available() and cfg.GPU:
+        model = crnn.CRNN(32, 1, len(alphabet) + 1, 256, 1, lstmFlag=cfg.lstm_flag).cuda()
     else:
-        model = crnn.CRNN(32, 1, len(alphabet) + 1, 256, 1, lstmFlag=LSTMFLAG).cpu()
+        model = crnn.CRNN(32, 1, len(alphabet) + 1, 256, 1, lstmFlag=cfg.lstm_flag).cpu()
 
-    state_dict = torch.load(ocrModel, map_location=lambda storage, loc: storage)
+    state_dict = torch.load(cfg.ocr_model, map_location=lambda storage, loc: storage)
 
     new_state_dict = OrderedDict()
     for k, v in state_dict.items():
@@ -51,7 +51,7 @@ def crnnOcr(image):
     scale = image.size[1] * 1.0 / 32
     w = int(image.size[0] / scale)
     transformer = dataset.resizeNormalize((w, 32))
-    if torch.cuda.is_available() and GPU:
+    if torch.cuda.is_available() and cfg.GPU:
         image = transformer(image).cuda()
     else:
         image = transformer(image).cpu()

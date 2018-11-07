@@ -16,7 +16,7 @@ import os
 import core
 from glob import glob
 from PIL import Image
-from config import global_tune, fine_tune, if_im
+from config import cfg
 import csv
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "1"
@@ -33,18 +33,18 @@ if __name__ == '__main__':
         for path in paths:
             img = Image.open(path).convert("RGB")
             _, result, angle = core.model(img,
-                                          global_tune=global_tune,  # 图片的整体大方向调整，逆时针旋转 镜像. 大约0.5s
-                                          fine_tune=fine_tune,  # 微调倾斜角（如果能保证图像水平，或者global_tune之后为水平，则不需要微调）. 大约2s
+                                          global_tune=cfg.global_tune,  # 图片的整体大方向调整，逆时针旋转 镜像. 大约0.5s
+                                          fine_tune=cfg.fine_tune,  # 微调倾斜角（如果能保证图像水平，或者global_tune之后为水平，则不需要微调）. 大约2s
                                           config=dict(MAX_HORIZONTAL_GAP=80,  # 字符之间的最大间隔，用于文本行的合并 TODO:最好是自动计算
                                                       MIN_V_OVERLAPS=0.6,  # 小 ==》斜 TODO
                                                       MIN_SIZE_SIM=0.6,
                                                       TEXT_PROPOSALS_MIN_SCORE=0.1,  # 值越小,候选框越多（一些模棱两可的文字）
                                                       TEXT_PROPOSALS_NMS_THRESH=0.4  # 候选框非极大值抑制
                                                       ),
-                                          if_im=if_im,
+                                          if_im=cfg.if_im,
                                           left_adjust=True,  # 对检测的文本行进行向左延伸
                                           right_adjust=True,  # 对检测的文本行进行向右延伸
-                                          alph=0.2  # 对检测的文本行进行向右、左延伸的倍数
+                                          alpha=0.2  # 对检测的文本行进行向右、左延伸的倍数
                                           )
             content = ''
             row = {}  # TODO 修改为多行一次写入

@@ -4,14 +4,13 @@
 # @Email   : 
 # @File    : text.py
 # @Software: PyCharm Community Edition
-import config as cfg
 import numpy as np
 import cv2
-from config import DISPLAY
+from config import cfg
 from detector.detectors import TextDetector
 from matplotlib import cm
 
-if cfg.OPENCV_FLAG:
+if cfg.opencv_flag:
     import opencv_dnn_detect as detect
 else:
     import darknet_detect as detect
@@ -37,11 +36,11 @@ def text_detect(img,
                                 TEXT_PROPOSALS_NMS_THRESH,
                                 )
     # 画框结束
-    text_recs, tmp = draw_boxes(np.array(img), boxes, color=None, caption='Box_Image', wait=True, display=DISPLAY)
+    text_recs, tmp = draw_boxes(im=np.array(img), bboxes=boxes)
     return text_recs, tmp
 
 
-def draw_boxes(im, bboxes, color=(255, 191, 0), display=True, caption="no_name", wait=True):
+def draw_boxes(im, bboxes, color=None, display=cfg.display, caption="Box_Image", wait=True):
     """
         boxes: bounding boxes
         cv2 中是bgr
@@ -103,7 +102,7 @@ def draw_boxes(im, bboxes, color=(255, 191, 0), display=True, caption="no_name",
 
     if display:
         cv2.imshow(caption, img)
-        # cv2.imwrite("./test_box.jpg", img)
+        cv2.imwrite("./test_box.jpg", img)
         if wait:
             cv2.waitKey(0)
         else:

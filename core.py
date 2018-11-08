@@ -1,36 +1,12 @@
 import numpy as np
+import math
+import time
 from config import cfg
 from PIL import Image
 from numpy import cos, sin
 from crnn.crnn_ import crnnOcr as crnnOcr
 from core_helper.angle import global_tune_angle, fine_tune_angle
 from core_helper.text import text_detect
-
-
-def xy_rotate_box(cx, cy, w, h, angle):
-    """
-    绕 cx,cy点 w,h 旋转 angle 的坐标
-    x_new = (x-cx)*cos(angle) - (y-cy)*sin(angle)+cx
-    y_new = (x-cx)*sin(angle) + (y-cy)*sin(angle)+cy
-    """
-
-    cx = float(cx)
-    cy = float(cy)
-    w = float(w)
-    h = float(h)
-    angle = float(angle)
-    x1, y1 = rotate(cx - w / 2, cy - h / 2, angle, cx, cy)
-    x2, y2 = rotate(cx + w / 2, cy - h / 2, angle, cx, cy)
-    x3, y3 = rotate(cx + w / 2, cy + h / 2, angle, cx, cy)
-    x4, y4 = rotate(cx - w / 2, cy + h / 2, angle, cx, cy)
-    return x1, y1, x2, y2, x3, y3, x4, y4
-
-
-def rotate(x, y, angle, cx, cy):
-    angle = angle  # *pi/180
-    x_new = (x - cx) * cos(angle) - (y - cy) * sin(angle) + cx
-    y_new = (x - cx) * sin(angle) + (y - cy) * cos(angle) + cy
-    return x_new, y_new
 
 
 def model(img, global_tune=cfg.global_tune, fine_tune=cfg.fine_tune, config={}, if_im=cfg.if_im,
@@ -63,10 +39,12 @@ def model(img, global_tune=cfg.global_tune, fine_tune=cfg.fine_tune, config={}, 
 
     # 2. 画文本框
     text_recs, tmp = text_detect(**config)
-    sorted_box = sort_box(text_recs)
+    # sorted_box = sort_box(text_recs)
 
     # 3. 识别文本
-    result = crnnRec(np.array(img), sorted_box, if_im, left_adjust, right_adjust, alpha)
+    result, text_pix_per_avg = crnnRec(np.array(img), text_recs, if_im, left_adjust, right_adjust, alpha)
+
+    # 4. 对3中结果排序
     return img, result, angle
 
 
@@ -97,7 +75,7 @@ def letterbox_image(image, size=cfg.img_size):
     return padded_image
 
 
-def sort_box(box):
+def sort_box(box, drift=5):
     """
     对box排序,页面排版
         box[index, 0] = x1
@@ -109,12 +87,10 @@ def sort_box(box):
         box[index, 6] = x4
         box[index, 7] = y4
     """
-
+    x_drift = 0
+    y_drift = 0
     box = sorted(box, key=lambda x: sum([x[1], x[3], x[5], x[7]]))
     return list(box)
-
-
-import time
 
 
 def crnnRec(im, text_recs, if_im, left_adjust, right_adjust, alpha):
@@ -129,54 +105,56 @@ def crnnRec(im, text_recs, if_im, left_adjust, right_adjust, alpha):
     :return
     """
     results = []
-    img = Image.fromarray(im)
-    count = 0
+    img = Image.fromarray(im)  # TODO: why img all 128
+    text_recs_len = len(text_recs)
+    text_pix_count = 0
     t0 = time.time()
     for index, rec in enumerate(text_recs):
-        t = time.time()
-        degree, w, h, cx, cy = solve(rec)
-        count += 1
+        # box是否倾斜（并不是主要步骤）
+        degree, cx, cy, w, h = center_and_degree(rec)
+        # 转图   左右微调并degree度数旋转（并不是主要步骤） TODO: add if
         partImg, w, h = rotate_cut_img(img, degree, rec, w, h, left_adjust, right_adjust, alpha)
-        # 暂时保留，可能之后有用
-        newBox = xy_rotate_box(cx, cy, w, h, degree)
-        partImg_ = partImg.convert('L')
         if if_im:
-            print(if_im)
-            print("+++++++++")
             partImg.show()
+        partImg_ = partImg.convert('L')
         simPred = crnnOcr(partImg_)  # 识别的文本
-        print("这张图的第 %d 个框，识别耗时：%f s" % (count, time.time() - t))
+        # 计算该框平均一个文字占用多少像素
+        text_pix_per = math.ceil(w / len(simPred))
+        text_pix_count += text_pix_per
         if simPred.strip() != u'':
-            results.append(
-                {'cx': cx, 'cy': cy, 'text': simPred, 'w': w, 'h': h, 'degree': degree * 180.0 / np.pi})
-    print("这张图识别总耗时：{} s".format(time.time() - t0))
-    return results
+            results.append({'cx': cx, 'cy': cy, 'text': simPred, 'w': w, 'h': h, 'degree': degree * 180.0 / np.pi})
+    print("这张图共%d个框，识别总耗时：%f" % (text_recs_len, time.time() - t0))
+    text_pix_per_avg = math.ceil(text_pix_count / text_recs_len)
+    return results, text_pix_per_avg
 
 
-def solve(box):
+def center_and_degree(box):
     """
-    绕 cx,cy点 w,h 旋转 angle 的坐标
-    x = cx-w/2
-    y = cy-h/2
-    x1-cx = -w/2*cos(angle) +h/2*sin(angle)
-    y1 -cy= -w/2*sin(angle) -h/2*cos(angle)
-
-    h(x1-cx) = -wh/2*cos(angle) +hh/2*sin(angle)
-    w(y1 -cy)= -ww/2*sin(angle) -hw/2*cos(angle)
-    (hh+ww)/2sin(angle) = h(x1-cx)-w(y1 -cy)
+    :return box中心坐标;w、h;角度
     """
     x1, y1, x2, y2, x3, y3, x4, y4 = box[:8]
-    cx = (x1 + x3 + x2 + x4) / 4.0
-    cy = (y1 + y3 + y4 + y2) / 4.0
-    w = (np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) + np.sqrt((x3 - x4) ** 2 + (y3 - y4) ** 2)) / 2
-    h = (np.sqrt((x2 - x3) ** 2 + (y2 - y3) ** 2) + np.sqrt((x1 - x4) ** 2 + (y1 - y4) ** 2)) / 2
+    cx = (x1 + x2 + x3 + x4) / 4.0
+    cy = (y1 + y2 + y3 + y4) / 4.0
+    w = (np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) + np.sqrt((x3 - x4) ** 2 + (y3 - y4) ** 2)) / 2  # 加上y轴严谨些
+    h = (np.sqrt((x2 - x3) ** 2 + (y2 - y3) ** 2) + np.sqrt((x1 - x4) ** 2 + (y1 - y4) ** 2)) / 2  # 加上x轴严谨些
     sinA = (h * (x1 - cx) - w * (y1 - cy)) * 1.0 / (h * h + w * w) * 2
-    angle = np.arcsin(sinA)
-    return angle, w, h, cx, cy
+    degree = np.arcsin(sinA)
+    return degree, cx, cy, w, h
 
 
 def rotate_cut_img(im, degree, box, w, h, left_adjust=cfg.left_adjust, right_adjust=cfg.right_adjust, alpha=cfg.alpha):
-    # x_center, y_center = np.mean(box[:4]), np.mean(box[4:8]) # bbox的中心坐标
+    """
+       如果框稍微有些斜，纠正(cut一个稍大的矩形); left_adjust + right_adjust
+    :param im:
+    :param degree:
+    :param box:
+    :param w:
+    :param h:
+    :param left_adjust:
+    :param right_adjust:
+    :param alpha:
+    :return: 纠正cut之后的box部分的图，新的w，h
+    """
     x1, y1, x2, y2, x3, y3, x4, y4 = box[:8]
     x_center, y_center = np.mean([x1, x2, x3, x4]), np.mean([y1, y2, y3, y4])
     degree_ = degree * 180.0 / np.pi
@@ -196,3 +174,29 @@ def rotate_cut_img(im, degree, box, w, h, left_adjust=cfg.left_adjust, right_adj
     newH = box[3] - box[1]
     tmpImg = im.rotate(degree_, center=(x_center, y_center)).crop(box)
     return tmpImg, newW, newH
+
+
+def xy_rotate_box(cx, cy, w, h, angle):
+    """
+    绕 cx,cy点 w,h 旋转 angle度
+    x_new = (x-cx)*cos(angle) - (y-cy)*sin(angle)+cx
+    y_new = (x-cx)*sin(angle) + (y-cy)*sin(angle)+cy
+    :return 旋转纠正之后的坐标
+    """
+    cx = float(cx)
+    cy = float(cy)
+    w = float(w)
+    h = float(h)
+    angle = float(angle)
+    x1, y1 = rotate(cx - w / 2, cy - h / 2, angle, cx, cy)
+    x2, y2 = rotate(cx + w / 2, cy - h / 2, angle, cx, cy)
+    x3, y3 = rotate(cx + w / 2, cy + h / 2, angle, cx, cy)
+    x4, y4 = rotate(cx - w / 2, cy + h / 2, angle, cx, cy)
+    return [x1, y1, x2, y2, x3, y3, x4, y4]
+
+
+def rotate(x, y, angle, cx, cy):
+    angle = angle  # *pi/180
+    x_new = (x - cx) * cos(angle) - (y - cy) * sin(angle) + cx
+    y_new = (x - cx) * sin(angle) + (y - cy) * cos(angle) + cy
+    return x_new, y_new

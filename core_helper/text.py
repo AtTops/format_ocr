@@ -29,7 +29,7 @@ def text_detect(img,
     scores = np.array(scores, dtype=np.float32)
     textdetector = TextDetector(MAX_HORIZONTAL_GAP, MIN_V_OVERLAPS, MIN_SIZE_SIM)
     shape = img.size[::-1]
-    # 对textNet检测出来的框进行进一步的过滤，score,nms TODO:score一次过滤即可
+    # 对textNet检测出来的框进行进一步的过滤，nms
     boxes = textdetector.detect(boxes,
                                 scores[:, np.newaxis],  # 变为列
                                 shape,
@@ -111,12 +111,12 @@ def draw_boxes(im, bboxes, color=None, display=cfg.display, caption="Box_Image",
     return text_recs, im
 
 
-def draw(im, x1, y1, x2, y2, x4, y4, x3, y3, color=None):
+def draw(im, x1, y1, x2, y2, x3, y3, x4, y4, color=None):
     """
     画框，ctpn检测出来的框(x3与x4的坐标不必纠结)
     """
     cv2.line(im, (int(x1), int(y1)), (int(x2), int(y2)), color, 1)
-    cv2.line(im, (int(x1), int(y1)), (int(x3), int(y3)), color, 1)
+    cv2.line(im, (int(x2), int(y2)), (int(x3), int(y3)), color, 1)
     cv2.line(im, (int(x3), int(y3)), (int(x4), int(y4)), color, 1)
-    cv2.line(im, (int(x4), int(y4)), (int(x2), int(y2)), color, 1)
+    cv2.line(im, (int(x4), int(y4)), (int(x1), int(y1)), color, 1)
     return im

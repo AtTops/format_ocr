@@ -174,29 +174,3 @@ def rotate_cut_img(im, degree, box, w, h, left_adjust=cfg.left_adjust, right_adj
     newH = box[3] - box[1]
     tmpImg = im.rotate(degree_, center=(x_center, y_center)).crop(box)
     return tmpImg, newW, newH
-
-
-def xy_rotate_box(cx, cy, w, h, angle):
-    """
-    绕 cx,cy点 w,h 旋转 angle度
-    x_new = (x-cx)*cos(angle) - (y-cy)*sin(angle)+cx
-    y_new = (x-cx)*sin(angle) + (y-cy)*sin(angle)+cy
-    :return 旋转纠正之后的坐标
-    """
-    cx = float(cx)
-    cy = float(cy)
-    w = float(w)
-    h = float(h)
-    angle = float(angle)
-    x1, y1 = rotate(cx - w / 2, cy - h / 2, angle, cx, cy)
-    x2, y2 = rotate(cx + w / 2, cy - h / 2, angle, cx, cy)
-    x3, y3 = rotate(cx + w / 2, cy + h / 2, angle, cx, cy)
-    x4, y4 = rotate(cx - w / 2, cy + h / 2, angle, cx, cy)
-    return [x1, y1, x2, y2, x3, y3, x4, y4]
-
-
-def rotate(x, y, angle, cx, cy):
-    angle = angle  # *pi/180
-    x_new = (x - cx) * cos(angle) - (y - cy) * sin(angle) + cx
-    y_new = (x - cx) * sin(angle) + (y - cy) * cos(angle) + cy
-    return x_new, y_new

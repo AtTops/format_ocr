@@ -3,7 +3,6 @@ import math
 import time
 from config import cfg
 from PIL import Image
-from numpy import cos, sin
 from crnn.crnn_ import crnnOcr as crnnOcr
 from core_helper.angle import global_tune_angle, fine_tune_angle
 from core_helper.text import text_detect
@@ -46,12 +45,15 @@ def model(img, global_tune=cfg.global_tune, fine_tune=cfg.fine_tune, config={}, 
     results_original, text_pix_per_avg = crnnRec(np.array(img), text_recs, if_im, left_adjust, right_adjust, alpha)
 
     # 4. 对3中结果排序
-    slide_x_pix = cfg.slide_x_threshold * text_pix_per_avg
-    slide_x_pix = max(config['MAX_HORIZONTAL_GAP'], slide_x_pix)  # x方向，小于该值的，不应该分开
-    slide_y_pix = cfg.slide_y_threshold * text_pix_per_avg
-    results_sorted = typeset_result(results_original, slide_x_pix, slide_y_pix, result_typeset_opotion)
+    if text_pix_per_avg != -1:
+        slide_x_pix = cfg.slide_x_threshold * text_pix_per_avg
+        slide_x_pix = max(config['MAX_HORIZONTAL_GAP'], slide_x_pix)  # x方向，小于该值的，不应该分开
+        slide_y_pix = cfg.slide_y_threshold * text_pix_per_avg
+        results_sorted = typeset_result(results_original, slide_x_pix, slide_y_pix, result_typeset_opotion)
 
-    return img, results_original, results_sorted, angle
+        return img, results_original, results_sorted, angle
+    else:
+        return img, results_original, '', angle
 
 
 def letterbox_image(image, size=cfg.img_size):
@@ -93,27 +95,29 @@ def crnnRec(im, text_recs, if_im, left_adjust, right_adjust, alpha):
     results = []
     img = Image.fromarray(im)  # TODO: why img all 128
     text_recs_len = len(text_recs)
-    text_pix_count = 0
-    t0 = time.time()
-    for index, rec in enumerate(text_recs):
-        # box是否倾斜（并不是主要步骤）
-        degree, cx, cy, w, h = center_and_degree(rec)
-        # 转图   左右微调并degree度数旋转（并不是主要步骤） TODO: add if
-        part_img, w, h = rotate_cut_img(img, degree, rec, w, h, left_adjust, right_adjust, alpha)
-        if if_im:
-            part_img.show()
-        simPred = crnnOcr(part_img.convert('L'))  # 识别的文本
-        # 计算该框平均一个文字占用多少像素
-        if len(simPred) > 0:
-            text_pix_per = math.ceil(w / len(simPred))
-            text_pix_count += text_pix_per
-        else:
-            text_recs_len -= 1
-        if simPred.strip() != u'':
-            results.append({'cx': cx, 'cy': cy, 'text': simPred, 'w': w, 'h': h, 'degree': degree * 180.0 / np.pi})
-    print("这张图共%d个框，识别总耗时：%f" % (text_recs_len, time.time() - t0))
-    text_pix_per_avg = math.ceil(text_pix_count / text_recs_len)
-    print('>> text_pix_per_avg: ', text_pix_per_avg)
+    text_pix_per_avg = -1
+    if text_recs_len > 1:
+        text_pix_count = 0
+        t0 = time.time()
+        for index, rec in enumerate(text_recs):
+            # box是否倾斜（并不是主要步骤）
+            degree, cx, cy, w, h = center_and_degree(rec)
+            # 转图   左右微调并degree度数旋转（并不是主要步骤） TODO: add if
+            part_img, w, h = rotate_cut_img(img, degree, rec, w, h, left_adjust, right_adjust, alpha)
+            if if_im:
+                part_img.show()
+            simPred = crnnOcr(part_img.convert('L'))  # 识别的文本
+            # 计算该框平均一个文字占用多少像素
+            if len(simPred) > 0:
+                text_pix_per = math.ceil(w / len(simPred))
+                text_pix_count += text_pix_per
+            else:
+                text_recs_len -= 1
+            if simPred.strip() != u'':
+                results.append({'cx': cx, 'cy': cy, 'text': simPred, 'w': w, 'h': h, 'degree': degree * 180.0 / np.pi})
+        print("这张图共%d个框，识别总耗时：%f" % (text_recs_len, time.time() - t0))
+        text_pix_per_avg = math.ceil(text_pix_count / text_recs_len)
+        print('>> text_pix_per_avg: ', text_pix_per_avg)
     return results, text_pix_per_avg
 
 
@@ -174,21 +178,21 @@ def typeset_result(result, slide_x_pix=None, slide_y_pix=None, result_typeset_op
         count_col = int(1024 / slide_x_pix) + 1
         results_matrix = np.zeros((count_row, count_col), dtype=object)
         for index, _ in enumerate(result):
-            print('here: ', result[index]["text"])
+            # print('here: ', result[index]["text"])
             x1 = result[index]["cx"] - result[index]["w"] / 2
             y1 = result[index]["cy"] - result[index]["h"] / 2
             col_index = row_index = 0
             for k in range(1, count_row):
                 if k * slide_y_pix > y1:
                     row_index = k - 1
-                    print('row_index : ', row_index)
+                    # print('row_index : ', row_index)
                     break
                 else:
                     continue
             for i in range(1, count_col):
                 if i * slide_x_pix > x1:
                     col_index = i - 1
-                    print('col_index : ', col_index)
+                    # print('col_index : ', col_index)
                     break
                 else:
                     continue

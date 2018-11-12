@@ -116,7 +116,8 @@ def crnnRec(im, text_recs, if_im, left_adjust, right_adjust, alpha):
             if simPred.strip() != u'':
                 results.append({'cx': cx, 'cy': cy, 'text': simPred, 'w': w, 'h': h, 'degree': degree * 180.0 / np.pi})
         print("这张图共%d个框，识别总耗时：%f" % (text_recs_len, time.time() - t0))
-        text_pix_per_avg = math.ceil(text_pix_count / text_recs_len)
+        if text_recs_len > 0:
+            text_pix_per_avg = math.ceil(text_pix_count / text_recs_len)
         print('>> text_pix_per_avg: ', text_pix_per_avg)
     return results, text_pix_per_avg
 
